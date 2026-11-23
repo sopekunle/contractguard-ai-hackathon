@@ -9,6 +9,7 @@ import { combinePages, editPageText, missingPage, movePhotoPage, newPhotoPage, p
 import { PhotoPagesPanel } from './PhotoPagesPanel';
 import { CLAUSE_LIBRARY_HASH, ClauseLibrary } from './ClauseLibrary';
 import { DeadlinePanel } from './DeadlinePanel';
+import { HELP_HASH, HelpPage, LOCAL_AI_HELP_HASH } from './HelpPage';
 import { PolicyPage, SiteFooter } from './PolicyPages';
 import { policyAt, policyPaths } from './policies';
 import { getClause } from './clauses';
@@ -353,7 +354,7 @@ function describeError(err: unknown, mode: Mode, seconds: number) {
   const suffix = seconds > SLOW_RUN_SECONDS ? ` It ran for ${seconds}s; slow local generation is normal on first runs.` : '';
   if (code === AIErrorCode.UNSUPPORTED || /Prompt API|LanguageModel API|not available in this environment/i.test(raw)) {
     return mode === 'device'
-      ? 'On-device inference is unavailable here. Enable the Chrome Prompt API flag, download the local model, or choose Hybrid / Cloud.' + suffix
+      ? 'On-device inference is unavailable here. See Local AI setup for Chrome requirements and model download steps, or choose Hybrid / Cloud.' + suffix
       : 'The local model is unavailable and the cloud request did not complete. Check your connection or choose Cloud.' + suffix;
   }
   // An API-not-enabled response is also a 403, so it must be identified before the generic
@@ -414,11 +415,13 @@ function isStreamingUnsupported(err: unknown): boolean {
 function App() {
   const [hash, setHash] = useState(() => window.location.hash);
   const mainRef = useRef<HTMLElement>(null);
-  const previousHash = useRef(hash);
+  const helpTopic = hash.startsWith(`${HELP_HASH}/`) ? hash.slice(1) : undefined;
+  const helpOpen = hash === HELP_HASH || Boolean(helpTopic);
+  const previousHash = useRef(helpTopic ? '' : hash);
   const libraryOpen = hash === CLAUSE_LIBRARY_HASH || hash.startsWith(`${CLAUSE_LIBRARY_HASH}/`);
   const selectedClause = libraryOpen ? getClause(hash.slice(CLAUSE_LIBRARY_HASH.length + 1)) : undefined;
   const policy = policyAt(hash);
-  const analyzerOpen = !libraryOpen && !policy;
+  const analyzerOpen = !libraryOpen && !policy && !helpOpen;
 
   useEffect(() => {
     const syncHash = () => setHash(window.location.hash);
@@ -429,12 +432,19 @@ function App() {
   useEffect(() => {
     document.title = policy ? `${policyPaths[policy].title} | ContractGuard AI`
       : selectedClause ? `${selectedClause.name} | Clause Library | ContractGuard AI`
-      : libraryOpen ? 'Clause Library | ContractGuard AI' : 'ContractGuard AI — Understand Before You Sign';
+      : libraryOpen ? 'Clause Library | ContractGuard AI'
+      : helpOpen ? 'Help & FAQ | ContractGuard AI' : 'ContractGuard AI — Understand Before You Sign';
     if (previousHash.current === hash) return;
     previousHash.current = hash;
+    const topicHeading = helpTopic ? document.getElementById(helpTopic) : null;
+    if (topicHeading) {
+      topicHeading.scrollIntoView();
+      topicHeading.focus({ preventScroll: true });
+      return;
+    }
     window.scrollTo(0, 0);
     mainRef.current?.querySelector<HTMLElement>('h1:not([hidden] h1)')?.focus({ preventScroll: true });
-  }, [hash, libraryOpen, policy, selectedClause]);
+  }, [hash, helpOpen, helpTopic, libraryOpen, policy, selectedClause]);
 
   const fileInput = useRef<HTMLInputElement>(null);
   const photoInput = useRef<HTMLInputElement>(null);
@@ -882,11 +892,12 @@ function App() {
         <nav className="workspace-nav" aria-label="Workspace">
           <a href="#contract-analyzer" className={`nav-item${analyzerOpen ? ' selected' : ''}`} aria-current={analyzerOpen ? 'page' : undefined}><FileCheck2 size={18} aria-hidden="true"/> Contract analyzer</a>
           <a href={CLAUSE_LIBRARY_HASH} className={`nav-item${libraryOpen ? ' selected' : ''}`} aria-current={libraryOpen ? 'page' : undefined}><BookOpen size={18} aria-hidden="true"/> Clause library</a>
+          <a href={HELP_HASH} className={`nav-item${helpOpen ? ' selected' : ''}`} aria-current={helpOpen ? 'page' : undefined}><CircleHelp size={18} aria-hidden="true"/> Help &amp; FAQ</a>
         </nav>
         <div className="sidebar-bottom"><div className="privacy-icon"><LockKeyhole size={18}/></div><strong>Privacy is a feature.</strong><p>Your document stays in this browser until you choose to analyze it. Hybrid or cloud requests may transmit an excerpt to Google.</p></div>
       </aside>
       <main className="main" ref={mainRef}>
-        <header className="topbar"><div><span className="breadcrumb">Workspace</span><span className="slash">/</span><span className="breadcrumb active">{policy ? policyPaths[policy].title : libraryOpen ? 'Clause library' : 'Contract analysis'}</span></div><span className="project-chip"><span className="pulse"/> Hackathon MVP</span></header>
+        <header className="topbar"><div><span className="breadcrumb">Workspace</span><span className="slash">/</span><span className="breadcrumb active">{policy ? policyPaths[policy].title : libraryOpen ? 'Clause library' : helpOpen ? 'Help & FAQ' : 'Contract analysis'}</span></div><span className="project-chip"><span className="pulse"/> Hackathon MVP</span></header>
         <div hidden={!analyzerOpen}>
         <section className="hero">
           <div className="hero-glow"/>
@@ -957,6 +968,7 @@ function App() {
               <div className="panel settings-panel">
                 <div className="panel-label"><Zap size={17}/> Select inference mode</div>
                 <p className="subtle">See exactly where your AI runs.</p>
+                <a className="local-ai-help" href={LOCAL_AI_HELP_HASH}>Local AI setup</a>
                 <div className="modes">{modes.map(({id,title,subtitle,icon:Icon}) => <button key={id} className={`mode-option ${mode === id ? 'active' : ''}`} aria-pressed={mode === id} disabled={loading} onClick={() => {if (mode !== id) setCloudConsent(false);setMode(id);if (id === 'device' && depth === 'detailed') setDepth('micro');setResult(null);setError('');}}><div className="mode-icon"><Icon size={19}/></div><span><strong>{title}</strong><small>{subtitle}</small></span><div className="radio-ring"/></button>)}</div>
 
                 <div className="depth-block">
@@ -1023,6 +1035,7 @@ function App() {
         </div>
         <ClauseLibrary hidden={!libraryOpen} clause={selectedClause}/>
         {policy && <PolicyPage policy={policy}/>}
+        {helpOpen && <HelpPage/>}
         <SiteFooter policy={policy}/>
       </main>
     </div>

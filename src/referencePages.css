@@ -103,11 +103,67 @@
 }
 
 .policy-page a:focus-visible,
+.help-page summary:focus-visible,
+.local-ai-help:focus-visible,
 .site-footer a:focus-visible,
 .consent-policies a:focus-visible,
 .deadline-card :is(summary, button, input):focus-visible {
   outline: 2px solid #9b6726;
   outline-offset: 3px;
+}
+
+.help-topics ul {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 240px), 1fr));
+  gap: 0 18px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.help-topics a,
+.local-ai-help {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+}
+
+.local-ai-help {
+  color: #755019;
+  font-size: .875rem;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.help-page :is(ol, ul) > li + li {
+  margin-top: 6px;
+}
+
+.help-page h2 {
+  scroll-margin-top: 16px;
+}
+
+.help-page h3 {
+  color: #172744;
+  font-size: 1rem;
+  margin: 16px 0 4px;
+}
+
+.help-page details {
+  margin: 10px 0;
+  border: 1px solid #dae2ed;
+  border-radius: 9px;
+  background: #fff;
+  padding-inline: 12px;
+  overflow-wrap: anywhere;
+}
+
+.help-page summary {
+  min-height: 44px;
+  padding-block: 9px;
+  color: #213e62;
+  font-weight: 700;
+  cursor: pointer;
 }
 
 .deadlines-panel {
