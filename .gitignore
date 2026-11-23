@@ -1,0 +1,26 @@
+# Local environment and secrets
+.env
+.env.local
+.env.*.local
+.env.*
+!.env.example
+
+# Dependencies and build output
+node_modules/
+dist/
+tsconfig.tsbuildinfo
+
+# Generated OCR runtime (recreated by npm run prepare:ocr)
+public/ocr/
+
+# Credentials, keys, and debug tokens
+**/serviceAccount*.json
+**/*private*key*.json
+**/*credentials*.json
+**/*appcheck*debug*
+**/*debug*token*
+
+# WorkBuddy project metadata and logs
+.workbuddy-ai/
+*.log
+.DS_Store
